@@ -1,0 +1,60 @@
+name: Build plugin
+
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  # If the build fails to find this tag, change it to a newer CommonLibSSE-NG tag.
+  COMMONLIB_TAG: v13.1.0
+  TRIPLET: x64-windows-static-md
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make vcpkg history complete
+        shell: pwsh
+        run: |
+          git -C $env:VCPKG_INSTALLATION_ROOT fetch --unshallow
+          Write-Host "done (an error above just means it was already complete)"
+          exit 0
+
+      - name: Get CommonLibSSE-NG
+        shell: pwsh
+        run: |
+          git clone --recurse-submodules --depth 1 --branch $env:COMMONLIB_TAG https://github.com/alandtse/CommonLibSSE-NG.git CommonLibSSE-NG
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Build and install CommonLibSSE-NG
+        shell: pwsh
+        run: |
+          $toolchain = "$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          cmake -S CommonLibSSE-NG -B build-commonlib -G "Visual Studio 17 2022" -A x64 "-DCMAKE_TOOLCHAIN_FILE=$toolchain" "-DVCPKG_TARGET_TRIPLET=$env:TRIPLET" "-DBUILD_TESTING=OFF" "-DENABLE_SKYRIM_VR=OFF" "-DCMAKE_INSTALL_PREFIX=$PWD/commonlib-install"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          cmake --build build-commonlib --config Release
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          cmake --install build-commonlib --config Release
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Build the plugin
+        shell: pwsh
+        run: |
+          $prefix = "$PWD/commonlib-install;$PWD/build-commonlib/vcpkg_installed/$env:TRIPLET"
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 "-DCMAKE_PREFIX_PATH=$prefix" "-DVCPKG_TARGET_TRIPLET=$env:TRIPLET"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          cmake --build build --config Release
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package/SKSE/Plugins | Out-Null
+          Copy-Item build/Release/MultiArrowCharge.dll package/SKSE/Plugins/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MultiArrowCharge
+          path: package
