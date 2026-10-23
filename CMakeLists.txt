@@ -20,3 +20,10 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/CommonLibSSE-NG/cmake/CommonLibSSE.cmake")
 add_commonlibsse_plugin(${PROJECT_NAME}
     AUTHOR "MultiArrowCharge"
     SOURCES src/main.cpp)
+
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        /FIalgorithm /FIarray /FIcompare /FIcstddef /FIcstdint /FIcstring
+        /FIfunctional /FIlimits /FImemory /FIoptional /FIstring /FIstring_view
+        /FIutility /FIvector)
+endif()
