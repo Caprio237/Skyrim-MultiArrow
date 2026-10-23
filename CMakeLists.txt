@@ -21,9 +21,5 @@ add_commonlibsse_plugin(${PROJECT_NAME}
     AUTHOR "MultiArrowCharge"
     SOURCES src/main.cpp)
 
-if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        /FIalgorithm /FIarray /FIcompare /FIcstddef /FIcstdint /FIcstring
-        /FIfunctional /FIlimits /FImemory /FIoptional /FIstring /FIstring_view
-        /FIutility /FIvector)
-endif()
+target_include_directories(${PROJECT_NAME} PRIVATE src)
+target_precompile_headers(${PROJECT_NAME} PRIVATE src/PCH.h)
