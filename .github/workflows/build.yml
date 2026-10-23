@@ -28,22 +28,12 @@ jobs:
           git clone --recurse-submodules --depth 1 --branch $env:COMMONLIB_TAG https://github.com/alandtse/CommonLibSSE-NG.git CommonLibSSE-NG
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
-      - name: Build and install CommonLibSSE-NG
-        shell: pwsh
-        run: |
-          $toolchain = "$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
-          cmake -S CommonLibSSE-NG -B build-commonlib -G "Visual Studio 17 2022" -A x64 "-DCMAKE_TOOLCHAIN_FILE=$toolchain" "-DVCPKG_TARGET_TRIPLET=$env:TRIPLET" "-DBUILD_TESTING=OFF" "-DENABLE_SKYRIM_VR=OFF" "-DCMAKE_INSTALL_PREFIX=$PWD/commonlib-install"
-          if ($LASTEXITCODE -ne 0) { exit 1 }
-          cmake --build build-commonlib --config Release
-          if ($LASTEXITCODE -ne 0) { exit 1 }
-          cmake --install build-commonlib --config Release
-          if ($LASTEXITCODE -ne 0) { exit 1 }
-
       - name: Build the plugin
         shell: pwsh
         run: |
-          $prefix = "$PWD/commonlib-install;$PWD/build-commonlib/vcpkg_installed/$env:TRIPLET"
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 "-DCMAKE_PREFIX_PATH=$prefix" "-DVCPKG_TARGET_TRIPLET=$env:TRIPLET"
+          $toolchain = "$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          $manifest = "$PWD/CommonLibSSE-NG"
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 "-DCMAKE_TOOLCHAIN_FILE=$toolchain" "-DVCPKG_TARGET_TRIPLET=$env:TRIPLET" "-DVCPKG_MANIFEST_DIR=$manifest"
           if ($LASTEXITCODE -ne 0) { exit 1 }
           cmake --build build --config Release
           if ($LASTEXITCODE -ne 0) { exit 1 }
